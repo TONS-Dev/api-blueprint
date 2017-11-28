@@ -2,7 +2,7 @@ module ApiBlueprint::Collect::ControllerHook
   def self.included(base)
     return unless ENV['API_BLUEPRINT_DUMP'] == '1'
 
-    base.around_filter :dump_blueprint_around
+    base.around_action :dump_blueprint_around
   end
 
   class Parser
