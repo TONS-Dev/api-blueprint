@@ -92,7 +92,7 @@ module ApiBlueprint::Collect::ControllerHook
         'status'       => response.status,
         'content_type' => response.content_type,
         'body'         => out_parser.body,
-        'headers'      => response.headers
+        'headers'      => response.headers.to_hash,
       },
       'route' => {
         'controller'   => controller_name,
