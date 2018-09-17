@@ -1,3 +1,5 @@
+require 'filewatcher'
+
 def blueprintfile(opts = {})
   file = Rails.root.join("Blueprintfile")
 
@@ -114,7 +116,7 @@ namespace :blueprint do
 
     files = compile(source, target).partials
 
-    FileWatcher.new(files).watch do |filename|
+    Filewatcher.new(files).watch do |filename|
       puts "\n--- #{Time.now} [#{filename.split('/').last}] ---\n\n"
       compile(source, target)
     end

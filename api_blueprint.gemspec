@@ -15,7 +15,6 @@ Gem::Specification.new do |spec|
   spec.description = spec.summary
 
   spec.files            = Dir["lib/**/*"]
-  spec.has_rdoc         = false
   spec.extra_rdoc_files = ["README.md"]
   spec.require_paths    = ["lib"]
 
@@ -24,4 +23,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'rails'
   spec.add_runtime_dependency 'redcarpet'
   spec.add_runtime_dependency 'rspec-rails'
+  spec.add_runtime_dependency 'sass'
+  spec.add_runtime_dependency 'uglifier'
 end

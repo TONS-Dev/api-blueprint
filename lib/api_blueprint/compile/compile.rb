@@ -1,3 +1,6 @@
+require 'sass'
+require 'uglifier'
+
 class ApiBlueprint::Compile::Compile
   attr_reader :source, :target, :partials
 
