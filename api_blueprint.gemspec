@@ -5,9 +5,9 @@ require 'api_blueprint/version'
 Gem::Specification.new do |spec|
   spec.name     = 'api_blueprint'
   spec.version  = ApiBlueprint::VERSION
-  spec.authors  = ['Karol Słuszniak']
+  spec.authors  = ['Karol Słuszniak', 'Dominik Curyło']
   spec.email    = 'k.sluszniak@visuality.pl'
-  spec.homepage = 'http://github.com/visualitypl/api-blueprint'
+  spec.homepage = 'http://github.com/tons-dev/api-blueprint'
   spec.license  = 'MIT'
   spec.platform = Gem::Platform::RUBY
 
