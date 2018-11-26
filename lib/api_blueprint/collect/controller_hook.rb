@@ -7,6 +7,7 @@ module ApiBlueprint::Collect::ControllerHook
     else
       base.before_filter :set_blueprint_args
     end
+
   end
 
   def set_blueprint_args

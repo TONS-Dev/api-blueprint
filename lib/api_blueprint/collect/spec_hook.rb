@@ -1,39 +1,68 @@
 module ApiBlueprint::Collect::SpecHook
   @@controller_name = nil
   @@action_name = nil
-   class << self
+
+  class << self
     def controller_name=(name)
       @@controller_name = name
     end
-     def action_name=(name)
+
+    def action_name=(name)
       @@action_name = name
     end
-     def controller_name
+
+    def controller_name
       @@controller_name
     end
-     def action_name
+
+    def action_name
       @@action_name
     end
   end
 
   def self.included(base)
-    return unless ENV['API_BLUEPRINT_DUMP'] == '1'
 
     base.before(:each) do |example|
-      data = {
-        'title_parts' => example_description_parts(example)
-      }
       @base_example = example
 
-      File.write(ApiBlueprint::Collect::Storage.spec_dump, data.to_yaml)
+      if ENV['API_BLUEPRINT_DUMP'] == '1'
+        data = {
+          'title_parts' => example_description_parts(example)
+        }
+        File.write(ApiBlueprint::Collect::Storage.spec_dump, data.to_yaml)
+      end
     end
+
     base.after(:each) do |example|
-      dump_blueprint(example)
+      dump_blueprint(example) if ENV['API_BLUEPRINT_DUMP'] == '1'
     end
 
     def set_param_description(param_name, description)
-      @base_example.metadata[:param_descriptions] ||= {}
-      @base_example.metadata[:param_descriptions][param_name] = description
+      @base_example.metadata[:param_definitions] ||= {}
+      if param_name.is_a? Array
+        tmp = @base_example.metadata[:param_definitions]
+        param_name.each do |param|
+          tmp[param.to_s] ||= {}
+          tmp = tmp[param.to_s]
+        end
+        tmp.merge!({ description: description })
+      else
+        @base_example.metadata[:param_definitions][param_name.to_s] = (@base_example.metadata[:param_definitions][param_name.to_s] || {}).merge({ description: description })
+      end
+    end
+
+    def set_param_definition(param_name, type, example_value, description)
+      @base_example.metadata[:param_definitions] ||= {}
+      if param_name.is_a? Array
+        tmp = @base_example.metadata[:param_definitions]
+        param_name.each do |param|
+          tmp[param.to_s] ||= {}
+          tmp = tmp[param.to_s]
+        end
+        tmp.merge!({ type: type, example: example_value, description: description })
+      else
+        @base_example.metadata[:param_definitions][param_name.to_s] = (@base_example.metadata[:param_definitions][param_name.to_s] || {}).merge({ type: type, example: example_value, description: description })
+      end
     end
 
     unless base.method_defined?(:set_description)
@@ -43,15 +72,18 @@ module ApiBlueprint::Collect::SpecHook
     end
   end
 
-   class Parser
+  class Parser
     attr_reader :input, :headers
-     def initialize(input)
+
+    def initialize(input)
       @input = input
     end
-     def method
+
+    def method
       input.method.to_s.upcase
     end
-     def params
+
+    def params
       # Reject action and controller params as they are internal params used by
       # Rails. Additionally reject all params that are inside url path and not
       # in query string
@@ -60,14 +92,16 @@ module ApiBlueprint::Collect::SpecHook
           params_in_request_path.include?(k)
       end
     end
-     def headers
+
+    def headers
       @headers ||=  Hash[input.headers.env.select do |k, v|
         (k.start_with?("HTTP_X_") ||  k.start_with?("HTTP_") || k == 'ACCEPT') && v
       end.map do |k, v|
         [human_header_key(k), v]
       end]
     end
-     def body
+
+    def body
       if input.content_type == 'application/json'
         if input.body != 'null'
           JSON.parse(input.body)
@@ -78,24 +112,30 @@ module ApiBlueprint::Collect::SpecHook
         input.body
       end
     end
-     private
-     def human_header_key(key)
+
+    private
+
+    def human_header_key(key)
       key.sub("HTTP_", '').split("_").map do |x|
         x.downcase
       end.join("_")
     end
-     def params_in_request_path
+
+    def params_in_request_path
       required_parts = []
-       # Find ActionDispatch::Journey::Route object matching current route
+
+      # Find ActionDispatch::Journey::Route object matching current route
       Rails.application.routes.router.recognize(@input) do |route, _matches, _parameters|
         # required_names method will return param names that are inside request
         # path, most likely id params required for REST-like routes
         required_parts = route.path.required_names
       end
-       required_parts
+
+      required_parts
     end
   end
-   def dump_blueprint_around
+
+  def dump_blueprint_around
     yield
   ensure
     dump_blueprint
@@ -105,13 +145,15 @@ module ApiBlueprint::Collect::SpecHook
     file       = ApiBlueprint::Collect::Storage.request_dump
     in_parser  = Parser.new(request)
     out_parser = Parser.new(response)
-     api_blueprint_keys = %w(x_api_blueprint_description)
+
+    api_blueprint_keys = %w(x_api_blueprint_description)
     api_blueprint_headers = in_parser.headers.slice(*api_blueprint_keys)
     api_blueprint_keys.each{|k| in_parser.headers.delete(k) }
-     data = {
+
+    data = {
       'metadata' => {
         'description' => example.metadata[:ex_description] || request.headers['HTTP_X_API_BLUEPRINT_DESCRIPTION'],
-        'param_descriptions'  => example.metadata[:param_descriptions]
+        'param_definitions'  => example.metadata[:param_definitions]
       },
       'request' => {
         'path'         => request.path,
@@ -132,13 +174,14 @@ module ApiBlueprint::Collect::SpecHook
         'action'       => @@action_name
       }
     }
-     spec = ApiBlueprint::Collect::Storage.spec_dump
+
+    spec = ApiBlueprint::Collect::Storage.spec_dump
     if File.exists?(spec)
       data['spec'] = YAML::load_file(spec)
     end
-     File.write(file, data.to_yaml)
-  end
 
+    File.write(file, data.to_yaml)
+  end
   private
 
   def example_description_parts(example)
