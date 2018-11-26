@@ -138,5 +138,3 @@ namespace :blueprint do
     end
   end
 end
-
-
